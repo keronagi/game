@@ -11,11 +11,7 @@ class HostScreen extends StatefulWidget {
 class _HostScreenState extends State<HostScreen> {
   final _gameNameController = TextEditingController();
   int? _selectedPlayer;
-  final _playerOptions = [2, 3, 4, 5, 6];
-
-  // توليد كود لعبة عشوائي
-
-  // فتح إعدادات الـ Hotspot يدويًا
+  final _playerOptions = [1, 2, 3, 4, 5, 6];
 
   @override
   void dispose() {

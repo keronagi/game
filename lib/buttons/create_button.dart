@@ -45,7 +45,7 @@ class CreateButton extends StatelessWidget {
           ),
         ),
         onPressed: () {
-          if (gameName!.isEmpty) {
+          if (gameName.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Please type game name!')),
             );

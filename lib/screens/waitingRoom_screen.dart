@@ -25,7 +25,7 @@ class _WaitingroomScreenState extends State<WaitingroomScreen> {
   late ServerSocket _server;
   @override
   void initState() {
-    _startserver;
+    _startserver();
     super.initState();
   }
 
@@ -192,11 +192,11 @@ class _WaitingroomScreenState extends State<WaitingroomScreen> {
               ),
             ),
             SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-            // if (canStart)
-            StartGameButton(
-              gameName: widget.gameName,
-              playersName: widget.playersName,
-            ),
+            if (canStart)
+              StartGameButton(
+                gameName: widget.gameName,
+                playersName: connectedPlayers,
+              ),
           ],
         ),
       ),
