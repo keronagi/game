@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:math';
-
+import 'package:game/widgets/playSound.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/material.dart';
@@ -9,8 +9,10 @@ import 'package:game/screens/waitingRoom_screen.dart';
 class CreateButton extends StatelessWidget {
   final String gameName;
   final int? playercount;
+  final String? hostName;
   const CreateButton({
     super.key,
+    this.hostName,
     required this.gameName,
     required this.playercount,
   });
@@ -35,16 +37,28 @@ class CreateButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      child: ElevatedButton(
+      width: double.infinity,
+      height: 60,
+      child: ElevatedButton.icon(
+        icon: Icon(Icons.play_arrow_rounded, size: 30, color: Colors.white),
+        label: Text(
+          'Create Game',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 1.2,
+          ),
+        ),
         style: ElevatedButton.styleFrom(
-          side: BorderSide(color: Colors.black),
-          backgroundColor: Colors.green.shade800,
+          backgroundColor: Colors.blue.shade800,
+          elevation: 5,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         onPressed: () {
+          SoundManager.playClick();
           if (gameName.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Please type game name!')),
@@ -52,10 +66,8 @@ class CreateButton extends StatelessWidget {
             return;
           }
 
-          // افتح إعدادات الـ Hotspot للمستخدم
           _openHotspotSettings();
 
-          // توليد كود ثم الانتقال مباشرةً إلى WaitingroomScreen
           final code = _generateGameCode();
           Navigator.push(
             context,
@@ -65,14 +77,11 @@ class CreateButton extends StatelessWidget {
                 playercount: playercount,
                 gameCode: code,
                 playersName: [],
+                hostName: hostName,
               ),
             ),
           );
         },
-        child: const Text(
-          'Create',
-          style: TextStyle(fontSize: 28, color: Colors.white),
-        ),
       ),
     );
   }

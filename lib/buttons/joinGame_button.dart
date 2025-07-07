@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:game/screens/waitingRoom_screen.dart';
-
 import 'dart:io';
+import 'package:game/widgets/playSound.dart';
 
 class JoingameButton extends StatefulWidget {
   final TextEditingController nameController;
   final TextEditingController ipController;
-
+  final String? hostName;
   const JoingameButton({
+    this.hostName,
     required this.nameController,
     required this.ipController,
 
@@ -48,6 +49,7 @@ class _JoingameButtonState extends State<JoingameButton> {
               playercount: _dummyPlayerCount,
               gameCode: _dummyGameCode,
               playersName: [],
+              hostName: widget.hostName,
             ),
           ),
         );
@@ -67,6 +69,7 @@ class _JoingameButtonState extends State<JoingameButton> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade800),
         onPressed: () {
+          SoundManager.playClick();
           _connectedToIPhost();
         },
         child: Text(

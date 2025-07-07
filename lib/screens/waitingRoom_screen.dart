@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:game/buttons/start_game_button.dart';
 
@@ -7,9 +6,11 @@ class WaitingroomScreen extends StatefulWidget {
   final List<String> playersName;
   final String gameName;
   final int? playercount;
+  final String? hostName;
   final String gameCode;
   const WaitingroomScreen({
     super.key,
+    required this.hostName,
     required this.playersName,
     required this.gameName,
     required this.playercount,
@@ -21,12 +22,16 @@ class WaitingroomScreen extends StatefulWidget {
 }
 
 class _WaitingroomScreenState extends State<WaitingroomScreen> {
-  List<String> connectedPlayers = ["you"];
+  List<String> connectedPlayers = [];
   late ServerSocket _server;
+
   @override
   void initState() {
-    _startserver();
     super.initState();
+    if (widget.hostName != null) {
+      connectedPlayers.add(widget.hostName!);
+    }
+    _startserver();
   }
 
   Future<void> _startserver() async {
@@ -48,154 +53,119 @@ class _WaitingroomScreenState extends State<WaitingroomScreen> {
     super.dispose();
   }
 
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue.shade900,
+            ),
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 20, color: Colors.pink.shade500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final canStart = connectedPlayers.length == (widget.playercount ?? 1);
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        backgroundColor: Colors.blueGrey.shade100,
+        backgroundColor: Colors.grey.shade100,
         centerTitle: true,
         title: Text(
-          "waiting room",
+          "Waiting Room",
           style: TextStyle(
-            color: Colors.pinkAccent.shade700,
-            fontSize: 30,
-            fontFamily: "cairo",
+            color: Colors.blue.shade900,
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            fontFamily: "Cairo",
           ),
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            Container(
-              width: MediaQuery.of(context).size.width,
-              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 36),
-              margin: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.blue.shade900, width: 2),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "gameName :",
-                          style: TextStyle(
-                            fontSize: 30,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
-                        TextSpan(
-                          text: "   ${widget.gameName}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Colors.pink.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "gameCode :",
-                          style: TextStyle(
-                            fontSize: 30,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
-                        TextSpan(
-                          text: "   ${widget.gameCode}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Colors.pink.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "player :",
-                          style: TextStyle(
-                            fontSize: 30,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
-                        TextSpan(
-                          text: "    ${widget.playercount}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Colors.pink.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _infoRow("Game Name:", widget.gameName),
+                    _infoRow("Game Code:", widget.gameCode),
+                    _infoRow("Players:", "${widget.playercount}"),
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-
-            Container(
-              margin: EdgeInsets.all(8),
-              height: MediaQuery.of(context).size.height * 0.4,
-              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 36),
-              width: MediaQuery.of(context).size.width,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.blue.shade900, width: 2),
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
+            SizedBox(height: 20),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "connected players",
-                    style: TextStyle(
-                      fontFamily: "cairo",
-                      fontSize: 30,
-                      color: Colors.blue.shade900,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.4,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Connected Players",
+                      style: TextStyle(
+                        fontFamily: "Cairo",
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade900,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: connectedPlayers.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          leading: Icon(Icons.person, color: Colors.green),
-                          title: Text(
-                            "- ${connectedPlayers[index]}",
-                            style: TextStyle(
-                              fontFamily: "cairo",
-                              fontSize: 22,
-                              color: Colors.blueGrey.shade300,
+                    const SizedBox(height: 10),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: connectedPlayers.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            leading: Icon(Icons.person, color: Colors.green),
+                            title: Text(
+                              connectedPlayers[index],
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.blueGrey.shade700,
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+            SizedBox(height: 30),
             if (canStart)
               StartGameButton(
                 gameName: widget.gameName,
                 playersName: connectedPlayers,
+                myName: widget.hostName!,
               ),
           ],
         ),

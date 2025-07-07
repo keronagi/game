@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:game/screens/player_screen.dart';
+import 'package:game/widgets/playSound.dart';
 
 class PlayerButton extends StatelessWidget {
   final String gameName;
@@ -8,25 +9,29 @@ class PlayerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      child: ElevatedButton(
+      width: double.infinity,
+      height: 60,
+      child: ElevatedButton.icon(
         onPressed: () {
+          SoundManager.playClick();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => JoinGameScreen(gameName: gameName),
             ),
           );
         },
-        style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          side: BorderSide(color: Colors.black),
-          backgroundColor: Colors.green.shade800,
+        icon: Icon(Icons.person, color: Colors.white), // أيقونة معبّرة عن لاعب
+        label: Text(
+          "Join Game", // بدل كلمة player فقط
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
-        child: Text(
-          "player",
-          style: TextStyle(fontSize: 30, color: Colors.white),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue.shade700,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 4,
         ),
       ),
     );

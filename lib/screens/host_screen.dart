@@ -2,96 +2,126 @@ import 'package:flutter/material.dart';
 import 'package:game/buttons/create_button.dart';
 
 class HostScreen extends StatefulWidget {
-  const HostScreen({super.key});
-
   @override
   State<HostScreen> createState() => _HostScreenState();
 }
 
 class _HostScreenState extends State<HostScreen> {
-  final _gameNameController = TextEditingController();
+  final TextEditingController _gameNameController = TextEditingController();
+  final TextEditingController hostNameController = TextEditingController();
   int? _selectedPlayer;
-  final _playerOptions = [1, 2, 3, 4, 5, 6];
 
-  @override
-  void dispose() {
-    _gameNameController.dispose();
-    super.dispose();
-  }
+  final List<int> playerOptions = [1, 2, 3, 4, 5, 6];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.blueGrey.shade100,
         centerTitle: true,
+        backgroundColor: Colors.blueGrey.shade50,
+
         title: Text(
-          'Host Game',
+          'Create Game',
           style: TextStyle(
-            fontFamily: 'cairo',
-            fontSize: 35,
-            color: Colors.pinkAccent.shade700,
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade900,
           ),
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(24.0),
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.04),
-              Text(
-                '* Input your name of game',
-                style: TextStyle(
-                  fontFamily: 'cairo',
-                  fontSize: 30,
-                  color: Colors.blue.shade900,
-                ),
-              ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+              _buildLabel('Game Name'),
               TextField(
                 controller: _gameNameController,
-                decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.games, size: 30),
-                  hintText: 'Input game name',
-                  border: OutlineInputBorder(),
+                decoration: _inputDecoration(
+                  hint: 'Enter game name',
+                  icon: Icons.videogame_asset,
                 ),
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-              Divider(thickness: 2, color: Colors.grey.shade400),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-              Text(
-                '* Choose number of players',
-                style: TextStyle(
-                  fontFamily: 'cairo',
-                  fontSize: 28,
-                  color: Colors.blue.shade900,
+              const SizedBox(height: 24),
+
+              _buildLabel('Host Name'),
+              TextField(
+                controller: hostNameController,
+                decoration: _inputDecoration(
+                  hint: 'Enter your name',
+                  icon: Icons.person,
                 ),
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+              const SizedBox(height: 24),
+
+              _buildLabel('Number of Players'),
               DropdownButtonFormField<int>(
                 value: _selectedPlayer,
-                items: _playerOptions
+                items: playerOptions
                     .map(
-                      (n) =>
-                          DropdownMenuItem(value: n, child: Text('$n Player')),
+                      (num) =>
+                          DropdownMenuItem(value: num, child: Text('$num')),
                     )
                     .toList(),
-                onChanged: (v) => setState(() => _selectedPlayer = v),
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
-                  hintText: 'Players',
+                onChanged: (val) => setState(() => _selectedPlayer = val),
+                decoration: _inputDecoration(
+                  hint: 'Select number of players',
+                  icon: Icons.people,
                 ),
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.15),
-              CreateButton(
-                gameName: _gameNameController.text,
-                playercount: _selectedPlayer ?? 2,
+              const SizedBox(height: 48),
+
+              Center(
+                child: CreateButton(
+                  gameName: _gameNameController.text,
+                  playercount: _selectedPlayer ?? 2,
+                  hostName: hostNameController.text.trim(),
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.blueGrey.shade800,
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      prefixIcon: Icon(icon, color: Colors.blue.shade900),
+      filled: true,
+      fillColor: Colors.white,
+      hintText: hint,
+      hintStyle: TextStyle(color: Colors.grey.shade600),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.blueGrey.shade200),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.blueGrey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.blue.shade900, width: 1.5),
       ),
     );
   }

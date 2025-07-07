@@ -1,15 +1,21 @@
-import 'dart:async';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:game/buttons/controllers_buttons.dart';
+import 'package:game/controllers/game_controllers.dart';
+import 'package:game/screens/final_result.dart';
+import 'package:game/widgets/textfeid_widget.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class GameScreen extends StatefulWidget {
   final List<String> playersName;
   final String gameName;
+  final IO.Socket? socket;
+  final String myName;
   const GameScreen({
     super.key,
-    required this.gameName,
+    required this.myName,
     required this.playersName,
+    required this.gameName,
+    this.socket,
   });
 
   @override
@@ -17,59 +23,89 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  int currentRound = 1;
-  final int totalRounds = 10;
-  String? currentLetter;
-  bool isStoped = false;
-  Timer? _timer;
-  bool isPaused = false;
-  int remainingTime = 60;
-  List<String> usedLetters = [];
-  late List<Map<String, dynamic>> playerscores;
-  final TextEditingController boyController = TextEditingController();
-  final TextEditingController girlController = TextEditingController();
-  final TextEditingController objectController = TextEditingController();
-  final TextEditingController animalController = TextEditingController();
-  final TextEditingController countryController = TextEditingController();
-  final TextEditingController plantController = TextEditingController();
-  @override
-  void initState() {
-    playerscores = widget.playersName
-        .map((name) => {"name": name, "score": 0})
-        .toList();
-    super.initState();
-    _startNewRound();
-    _startTimer();
+  late GameController controller;
+  int? currentRoundScore;
+  bool showRoundScore = false;
+  Widget _infoTile(String title, String value) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.indigo,
+          ),
+        ),
+      ],
+    );
   }
 
-  void _startNewRound() {
-    if (currentRound <= totalRounds) {
-      genratetRandomLetter();
-      _startTimer();
-      setState(() {
-        isPaused = false;
-        isStoped = false;
-        remainingTime = 60;
-        boyController.clear();
-        girlController.clear();
-        objectController.clear();
-        countryController.clear();
-        plantController.clear();
-        animalController.clear();
+  @override
+  void initState() {
+    super.initState();
+    controller = GameController(playersName: widget.playersName);
+    controller.startNewRound(() => setState(() {}));
+    controller.startTimer(onTick: () => setState(() {}), onEnd: _endRound);
+
+    if (widget.socket != null) {
+      widget.socket!.on("round result", (data) {
+        final scoreMap = Map<String, int>.from(data);
+        controller.apllyscorses(scoreMap);
+
+        setState(() {
+          currentRoundScore = scoreMap[widget.myName];
+          showRoundScore = true;
+        });
       });
     }
   }
 
-  void genratetRandomLetter() {
-    const letters = "ابتثجحخدذرزسشصضقفكمنليغعهطظو";
-    String randomLetter;
-    do {
-      randomLetter = letters[Random().nextInt(letters.length)];
-    } while (usedLetters.contains(randomLetter));
+  void _endRound() {
     setState(() {
-      currentLetter = randomLetter;
-      usedLetters.add(randomLetter);
+      controller.endRound();
     });
+
+    if (widget.myName == widget.playersName.first) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => FinalResult(
+            players: widget.playersName,
+            answers: controller.getAllAnswers(),
+            socket: widget.socket,
+            onSubmit: (Map<String, int> updatedScores) {
+              setState(() {
+                controller.apllyscorses(updatedScores);
+                currentRoundScore = updatedScores[widget.myName];
+                showRoundScore = true;
+
+                if (controller.currentRound == controller.totalRounds) {
+                  Future.delayed(Duration(milliseconds: 300), () {
+                    _showFinalResult();
+                  });
+                } else {
+                  controller.currentRound++;
+                  controller.startNewRound(() => setState(() {}));
+                  controller.startTimer(
+                    onTick: () => setState(() {}),
+                    onEnd: _endRound,
+                  );
+                }
+              });
+            },
+          ),
+        ),
+      );
+    }
   }
 
   void _showFinalResult() {
@@ -85,16 +121,16 @@ class _GameScreenState extends State<GameScreen> {
             border: TableBorder.all(color: Colors.black12),
             children: [
               TableRow(
-                children: const [
+                children: [
                   Padding(
-                    padding: EdgeInsets.all(8.0),
+                    padding: EdgeInsets.all(8),
                     child: Text(
                       "Player",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.all(8.0),
+                    padding: EdgeInsets.all(8),
                     child: Text(
                       "Score",
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -102,29 +138,35 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ],
               ),
-              ...playerscores.map((player) {
-                return TableRow(
+              ...controller.playerscores.map(
+                (p) => TableRow(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text("${player['name']}"),
+                      padding: EdgeInsets.all(8),
+                      child: Text("${p['name']}"),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text("${player['score']}"),
+                      padding: EdgeInsets.all(8),
+                      child: Text("${p['score']}"),
                     ),
                   ],
-                );
-                // ignore: unnecessary_to_list_in_spreads
-              }).toList(),
+                ),
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () {
+              setState(() {
+                controller.restartGame();
+                controller.startNewRound(() => setState(() {}));
+                controller.startTimer(
+                  onTick: () => setState(() {}),
+                  onEnd: _endRound,
+                );
+              });
               Navigator.pop(context);
-              _restartGame();
             },
             child: Text("restart"),
           ),
@@ -137,192 +179,177 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    remainingTime = 60;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!isPaused) {
-        setState(() {
-          if (remainingTime > 0) {
-            remainingTime--;
-          } else {
-            _endRound();
-          }
-        });
-      }
-    });
-  }
-
-  void _endRound() {
-    _timer?.cancel();
-    setState(() {
-      isStoped = true;
-    });
-    for (var player in playerscores) {
-      player['score'] += calculatePlayerScore(player);
-    }
-    if (currentRound < totalRounds) {
-      _showFinalResult();
-    }
-  }
-
-  int calculatePlayerScore(Map<String, dynamic> player) {
-    return 10;
-  }
-
-  void _restartGame() {
-    setState(() {
-      currentRound = 1;
-      usedLetters.clear();
-      playerscores = playerscores
-          .map((p) => {'name': p['name'], 'score': 0})
-          .toList();
-    });
-    _startNewRound();
-  }
-
-  bool _areAllFieldsFilled() {
-    final letter = currentLetter;
-    if (letter == null) return false;
-    bool startWithLetter(String text) =>
-        text.trim().length > 1 && text.trim().startsWith(letter);
-    return startWithLetter(boyController.text) &&
-        startWithLetter(girlController.text) &&
-        startWithLetter(objectController.text) &&
-        startWithLetter(animalController.text) &&
-        startWithLetter(plantController.text) &&
-        startWithLetter(countryController.text);
-  }
-
   @override
   void dispose() {
-    _timer?.cancel();
+    controller.dispose();
+    widget.socket!.off("round result");
     super.dispose();
-  }
-
-  Widget buildinputfeild(String label, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      enabled: !isStoped,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // final size = MediaQuery.of(context).size;
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.grey.shade100,
-        centerTitle: true,
+        backgroundColor: Colors.indigo,
         title: Text(
           widget.gameName,
           style: TextStyle(
-            fontSize: 40,
-            color: Colors.pinkAccent.shade700,
-            fontFamily: "cairo",
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            fontFamily: "Cairo",
+            color: Colors.white,
           ),
         ),
+        centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsetsGeometry.all(16),
+        padding: const EdgeInsets.all(12.0),
         child: SingleChildScrollView(
           child: Column(
             children: [
-              Center(
-                child: Text(
-                  "round : $currentRound/$totalRounds",
-                  style: TextStyle(fontSize: 30),
+              // ✅ Round Info
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 5,
+                color: Colors.indigo.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _infoTile(
+                        "Round",
+                        "${controller.currentRound} / ${controller.totalRounds}",
+                      ),
+                      _infoTile("Letter", "${controller.currentLetter}"),
+                      _infoTile("Time", "${controller.remainingTime}s"),
+                    ],
+                  ),
                 ),
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-              Text("letter :$currentLetter", style: TextStyle(fontSize: 20)),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-              Text(
-                "time left : $remainingTime sec",
-                style: TextStyle(fontSize: 30, color: Colors.green.shade500),
-              ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.002),
-              buildinputfeild("ولد", boyController),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.002),
-              buildinputfeild("بنت", girlController),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.002),
-              buildinputfeild("جماد", objectController),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.002),
-              buildinputfeild("حيوان", animalController),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.002),
-              buildinputfeild("نبات", plantController),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.002),
-              buildinputfeild("بلاد", countryController),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-              Row(
-                children: [
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.3,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _timer?.cancel();
-                        setState(() {
-                          isPaused = true;
-                          isStoped = true;
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade700,
-                      ),
-                      child: Text(
-                        "stop",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.3,
-                    child: ElevatedButton(
-                      onPressed: _areAllFieldsFilled() ? _endRound : null,
+              const SizedBox(height: 20),
 
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade900,
+              // ✅ Player Score Box (if available)
+              if (showRoundScore && currentRoundScore != null)
+                Container(
+                  padding: EdgeInsets.all(14),
+                  margin: EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.emoji_events, color: Colors.green),
+                      SizedBox(width: 10),
+                      Text(
+                        'Your Score: $currentRoundScore pts',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade800,
+                        ),
                       ),
-                      child: Text(
-                        "complete",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade900,
-                    ),
-                    onPressed: () {},
-                    child: Text(
-                      "new round",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-              if (isPaused)
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade500,
-                  ),
-                  onPressed: () {
-                    remainingTime;
-                    setState(() {
-                      isStoped = false;
-                      isPaused = false;
-                    });
-                  },
-                  child: Text(
-                    "continue",
-                    style: TextStyle(color: Colors.white),
+                    ],
                   ),
                 ),
+
+              // ✅ Player Cards
+              ...widget.playersName.map((player) {
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 3,
+                  margin: EdgeInsets.only(bottom: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          player == widget.myName
+                              ? "👤 You ($player)"
+                              : "👥 $player",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: player == widget.myName
+                                ? Colors.indigo
+                                : Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            buildInputField(
+                              label: "ولد",
+                              controller: controller.boyController[player]!,
+                              isEnabled: !controller.isStoped,
+                            ),
+                            buildInputField(
+                              label: "بنت",
+                              controller: controller.girlController[player]!,
+                              isEnabled: !controller.isStoped,
+                            ),
+                            buildInputField(
+                              label: "جماد",
+                              controller: controller.objectController[player]!,
+                              isEnabled: !controller.isStoped,
+                            ),
+                            buildInputField(
+                              label: "حيوان",
+                              controller: controller.animalController[player]!,
+                              isEnabled: !controller.isStoped,
+                            ),
+                            buildInputField(
+                              label: "نبات",
+                              controller: controller.plantController[player]!,
+                              isEnabled: !controller.isStoped,
+                            ),
+                            buildInputField(
+                              label: "بلاد",
+                              controller: controller.countryController[player]!,
+                              isEnabled: !controller.isStoped,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+
+              // ✅ Control Buttons
+              ControlButtons(
+                onStop: () {
+                  controller.timer?.cancel();
+                  setState(() {
+                    controller.isPaused = true;
+                    controller.isStoped = true;
+                  });
+                },
+                onComplete: _endRound,
+                onContinue: () {
+                  setState(() {
+                    controller.isPaused = false;
+                    controller.isStoped = false;
+                  });
+                  controller.startTimer(
+                    onTick: () => setState(() {}),
+                    onEnd: _endRound,
+                  );
+                },
+                isCompleteEnabled: controller.areAllFieldsValid(),
+                isPaused: controller.isPaused,
+              ),
             ],
           ),
         ),

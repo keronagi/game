@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:game/screens/game_screen.dart';
+import 'package:game/widgets/playSound.dart';
 
 class StartGameButton extends StatelessWidget {
   final List<String> playersName;
   final String gameName;
+  final String myName;
+
   const StartGameButton({
+    required this.myName,
     super.key,
     required this.gameName,
     required this.playersName,
@@ -23,13 +27,17 @@ class StartGameButton extends StatelessWidget {
           backgroundColor: Colors.green.shade800,
         ),
         onPressed: () {
+          SoundManager.playClick();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Center(child: Text("Game Started!"))),
           );
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (context) =>
-                  GameScreen(playersName: playersName, gameName: gameName),
+              builder: (context) => GameScreen(
+                myName: myName,
+                playersName: playersName,
+                gameName: gameName,
+              ),
             ),
           );
         },
